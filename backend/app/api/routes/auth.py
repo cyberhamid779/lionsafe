@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.services.auth import authenticate_admin, create_access_token, hash_password
 from app.services.database import get_db
 from app.models.organization import Organization
@@ -22,9 +23,18 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Bu email artıq qeydiyyatdadır")
 
-    org = Organization(name=data.company_name, domain=data.email.split("@")[1])
+    domain = data.email.split("@")[1]
+    existing_org = db.query(Organization).filter(Organization.domain == domain).first()
+    if existing_org:
+        raise HTTPException(status_code=400, detail="Bu domain artıq qeydiyyatdadır")
+
+    org = Organization(name=data.company_name, domain=domain)
     db.add(org)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Bu domain artıq qeydiyyatdadır")
 
     admin = User(
         org_id=org.id,
