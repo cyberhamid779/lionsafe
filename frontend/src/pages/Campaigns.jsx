@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import api from '../api/client'
 
@@ -114,6 +115,7 @@ export default function Campaigns() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
+                    <div className="flex gap-2">
                     {c.status === 'draft' && (
                       <button
                         onClick={() => launch(c.id)}
@@ -123,6 +125,15 @@ export default function Campaigns() {
                         {launching === c.id ? 'Başladılır...' : 'Başlat'}
                       </button>
                     )}
+                    {c.status !== 'draft' && (
+                      <Link
+                        to={`/campaigns/${c.id}/stats`}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                      >
+                        Hesabat
+                      </Link>
+                    )}
+                  </div>
                   </td>
                 </tr>
               )

@@ -58,14 +58,30 @@ def campaign_stats(campaign_id: int, db: Session = Depends(get_db), current_user
     if not campaign:
         raise HTTPException(status_code=404, detail="Tapılmadı")
     from app.models.click import Click
+    from app.models.user import User
     clicks = db.query(Click).filter(Click.campaign_id == campaign_id).all()
     total = len(clicks)
     clicked = sum(1 for c in clicks if c.clicked)
     trained = sum(1 for c in clicks if c.trained)
+
+    targets = []
+    for c in clicks:
+        user = db.query(User).filter(User.id == c.user_id).first()
+        targets.append({
+            "name": user.name if user else "—",
+            "email": user.email if user else "—",
+            "department": user.department if user else "—",
+            "clicked": c.clicked,
+            "trained": c.trained,
+            "clicked_at": c.clicked_at.isoformat() if c.clicked_at else None,
+        })
+
     return {
         "campaign_id": campaign_id,
+        "campaign_name": campaign.name,
         "total_targets": total,
         "clicked": clicked,
         "click_rate": round(clicked / total * 100, 1) if total else 0,
         "trained": trained,
+        "targets": targets,
     }
